@@ -1,0 +1,65 @@
+﻿@page "/Product/Create"
+@using GestaoPedidosBlazorApp.Client.Models
+@using GestaoPedidosBlazorApp.Client.Services
+@inject ProductService _ProductService
+@inject NavigationManager Navigation
+
+<h3>Cadastrar Produto</h3>
+
+<div class="card">
+    <div class="card-body">
+        <EditForm Model="@Product" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label for="Name" class="form-label">Nome do Produto</label>
+                <InputText id="Name" class="form-control" @bind-Value="Product.Name" />
+                <ValidationMessage For="@(() => Product.Name)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="Description" class="form-label">Descrição</label>
+                <InputTextArea id="Description" class="form-control" @bind-Value="Product.Description" />
+                <ValidationMessage For="@(() => Product.Description)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="Price" class="form-label">Preço</label>
+                <InputNumber id="Price" class="form-control" @bind-Value="Product.Price" />
+                <ValidationMessage For="@(() => Product.Price)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="Sku" class="form-label">SKU</label>
+                <InputText id="Sku" class="form-control" @bind-Value="Product.Sku" />
+                <ValidationMessage For="@(() => Product.Sku)" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancelar</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private Product Product = new Product();
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            await _ProductService.AddProductAsync(Product);
+            Navigation.NavigateTo("/Product/List");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao salvar produto: {ex.Message}");
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/Product/List");
+    }
+}

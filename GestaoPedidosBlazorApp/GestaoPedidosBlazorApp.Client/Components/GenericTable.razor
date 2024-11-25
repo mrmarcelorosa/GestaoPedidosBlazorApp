@@ -1,0 +1,62 @@
+﻿@typeparam T
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">@Title</h5>
+                @if (!string.IsNullOrEmpty(AddButtonText))
+                {
+                    <div style="text-align:end">
+                        <button class="btn btn-success" @onclick="AddAction">
+                            <i class="ri-add-line align-bottom me-1"></i> @AddButtonText
+                        </button>
+                    </div>
+                }
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered dt-responsive nowrap table-striped align-middle" style="width: 100%">
+                    <thead>
+                        <tr>
+                            @foreach (var column in Columns)
+                            {
+                                <th>@column.Header</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Data)
+                        {
+                            <tr>
+                                @foreach (var column in Columns)
+                                {
+                                    <td>@column.PropertySelector(item)</td>
+                                }
+                                <td>
+                                    @if (Actions != null)
+                                    {
+                                        foreach (var action in Actions)
+                                        {
+                                            <button class="btn btn-sm btn-secondary me-2" @onclick="@(() => action.Action(item))">
+                                                <i class="@action.Icon"></i> @action.Label
+                                            </button>
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Generic Table";
+    [Parameter] public string? AddButtonText { get; set; }
+    [Parameter] public EventCallback AddAction { get; set; }
+    [Parameter] public List<T> Data { get; set; } = new();
+    [Parameter] public List<ColumnDefinition<T>> Columns { get; set; } = new();
+    [Parameter] public List<TableAction>? Actions { get; set; }
+}

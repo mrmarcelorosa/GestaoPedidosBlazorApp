@@ -1,0 +1,139 @@
+﻿@page "/Order/Create"
+@using GestaoPedidosBlazorApp.Client.Models
+@using GestaoPedidosBlazorApp.Client.Services
+@using GestaoPedidos.DTO
+
+@inject NavigationManager Navigation
+@inject ProductService _ProductService
+@inject ClientService _ClientService
+@inject OrderService _orderService
+
+<h3>Order Form</h3>
+
+<EditForm Model="@order" OnValidSubmit="HandleSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="clientId" class="form-label">Client</label>
+        <select class="form-select" id="clientId" @bind="order.ClientId">
+            <option value="">Selecione um Cliente</option>
+            @foreach (var client in clients)
+            {
+                <option value="@client.ClientId">@client.ClientName</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="billingAddressId" class="form-label">Endereço de Cobrança</label>
+        <select class="form-select" id="billingAddressId" @bind="order.BillingAddressId">
+            <option value="">Selecione o Endereço de Cobrança</option>
+            @foreach (var address in selectedClientAddresses)
+            {
+                <option value="@address.AddressId">@address.AddressInfo</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="deliveryAddressId" class="form-label">Endereço de Entrega</label>
+        <select class="form-select" id="deliveryAddressId" @bind="order.DeliveryAddressId">
+            <option value="">Selecione o Endereço de Entrega</option>
+            @foreach (var address in selectedClientAddresses)
+            {
+                <option value="@address.AddressId">@address.AddressInfo</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="orderItems" class="form-label">Items</label>
+
+        @foreach (var item in order.OrderItems)
+        {
+            <div class="row mb-3">
+                <div class="col">
+                    <select class="form-select" id="productId" @bind="item.ProductId">
+                        <option value="">Selecione um produto</option>
+                        @foreach (var product in productSelect)
+                        {
+                            <option value="@product.ProductId">@product.ProductName</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col">
+                    <InputNumber class="form-control" @bind-Value="item.Amount" placeholder="Quantidade" min="1" />
+                </div>
+
+                <div class="col">
+                    <button type="button" class="btn btn-danger" @onclick="() => RemoveOrderItem(item)">Remover</button>
+                </div>
+            </div>
+        }
+
+        <button type="button" class="btn btn-secondary" @onclick="AddOrderItem">Adicionar Item</button>
+    </div>
+
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</EditForm>
+
+@code {
+    private List<ProductDTO> productSelect = new List<ProductDTO>();
+    private List<ClientAddressDTO> clients = new List<ClientAddressDTO>(); 
+    private List<ClientAddressDetailDTO> selectedClientAddresses = new List<ClientAddressDetailDTO>();
+    private OrderCreateRequest order = new OrderCreateRequest
+    {
+        ClientId = 0,
+        BillingAddressId = 0,
+        DeliveryAddressId = 0,
+        OrderItems = new List<OrderItem>
+        {
+            new OrderItem { ProductId = 0, Amount = 1 }
+        }
+    };
+
+    private async Task HandleSubmit()
+    {
+        var success = await _orderService.PostOrderAsync(order);
+
+        if (success)
+        {
+            Navigation.NavigateTo("/Order/List");
+        }
+        else
+        {
+            Console.WriteLine("Erro ao salvar o pedido.");
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSelects();
+    }
+
+    public async Task LoadSelects()
+    {
+        productSelect = await _ProductService.GetProductsSelectAsync();
+
+        clients = await _ClientService.GetClientesSelectAsync();
+
+        selectedClientAddresses = clients
+            .Where(c => c.Addresses != null)
+            .SelectMany(c => c.Addresses)
+            .ToList();
+    }
+
+    private void AddOrderItem()
+    {
+        order.OrderItems.Add(new OrderItem { ProductId = 0, Amount = 1 });
+    }
+
+    private void RemoveOrderItem(OrderItem item)
+    {
+        order.OrderItems.Remove(item);
+    }
+}

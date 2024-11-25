@@ -1,0 +1,52 @@
+﻿@page "/Client/List"
+@using GestaoPedidosBlazorApp.Client.Models
+@using GestaoPedidosBlazorApp.Client.Components
+@using GestaoPedidosBlazorApp.Client.Services
+@using System.Globalization;
+
+@inject NavigationManager Navigation
+@inject ClientService _ClientService
+@inject IJSRuntime JS
+
+<GenericTable T="Cliente"
+              Title="Clientes"
+              AddButtonText="Adicionar Cliente"
+              AddAction="@AddClient"
+              Data="@Clients"
+              Columns="@ClientColumns"
+              Actions="@Actions" />
+
+@code {
+    private List<Cliente> Clients = new List<Cliente>();
+    private List<TableAction> Actions;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClients();
+    }
+
+    protected override void OnInitialized()
+    {
+    }
+
+    private async Task LoadClients()
+    {
+        Clients = await _ClientService.GetClientesAsync();
+        Console.WriteLine(Clients);
+    }
+
+    // Configuração das colunas para a tabela
+    private List<ColumnDefinition<Cliente>> ClientColumns = new List<ColumnDefinition<Cliente>>
+    {
+        new ColumnDefinition<Cliente> { Header = "ID", PropertySelector = item => item.Id },
+        new ColumnDefinition<Cliente> { Header = "Nome", PropertySelector = item => item.Name },
+        new ColumnDefinition<Cliente> { Header = "Email", PropertySelector = item => item.Email },
+        new ColumnDefinition<Cliente> { Header = "CPF", PropertySelector = item => item.Cpf },
+        new ColumnDefinition<Cliente> { Header = "Telefone", PropertySelector = item => item.Phone }
+    };
+
+    private void AddClient()
+    {
+        Navigation.NavigateTo("/Client/Create");
+    }
+}

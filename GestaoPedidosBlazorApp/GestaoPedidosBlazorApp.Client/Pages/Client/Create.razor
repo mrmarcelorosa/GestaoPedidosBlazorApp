@@ -1,0 +1,194 @@
+﻿@page "/Client/Create"
+@using GestaoPedidosBlazorApp.Client.Models
+@using GestaoPedidosBlazorApp.Client.Services
+@inject ClientService _ClienteService
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+<h3>Cadastrar Cliente</h3>
+
+<div class="card">
+    <div class="card-body">
+        <EditForm Model="@Cliente" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <!-- Dados do Cliente -->
+            <h5>Dados Pessoais</h5>
+            <div class="mb-3">
+                <label for="Name" class="form-label">Nome</label>
+                <InputText id="Name" class="form-control" @bind-Value="Cliente.Name" />
+                <ValidationMessage For="@(() => Cliente.Name)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="Email" class="form-label">E-mail</label>
+                <InputText id="Email" type="email" class="form-control" @bind-Value="Cliente.Email" />
+                <ValidationMessage For="@(() => Cliente.Email)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="Cpf" class="form-label">CPF</label>
+                <InputText id="Cpf" class="form-control" @bind-Value="Cliente.Cpf" />
+                <ValidationMessage For="@(() => Cliente.Cpf)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="Phone" class="form-label">Telefone</label>
+                <InputText id="Phone" class="form-control" @bind-Value="Cliente.Phone" />
+                <ValidationMessage For="@(() => Cliente.Phone)" />
+            </div>
+
+
+            <!-- Lista de Endereços -->
+            <h5>Endereços</h5>
+            @foreach (var address in Cliente.Addresses)
+            {
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label">CEP</label>
+                                <InputText class="form-control" @bind-Value="address.CEP" />
+                                <ValidationMessage For="@(() => address.CEP)" />
+                                <button type="button" class="btn btn-info mt-2 btn-sm" @onclick="() => FillAddress(address)">Buscar Endereço</button>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Logradouro</label>
+                                <InputText class="form-control" @bind-Value="address.Logradouro" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Número</label>
+                                <InputText class="form-control" @bind-Value="address.NumberAddres" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Complemento</label>
+                                <InputText class="form-control" @bind-Value="address.Complement" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Tipo</label>
+                                <InputSelect class="form-control" @bind-Value="address.AddressType">
+                                    @foreach (var type in Enum.GetValues(typeof(AddressType)).Cast<AddressType>())
+                                    {
+                                        <option value="@type">@type</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-3">
+                                <label class="form-label">Bairro</label>
+                                <InputText class="form-control" @bind-Value="address.District" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Cidade</label>
+                                <InputText class="form-control" @bind-Value="address.City" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Estado</label>
+                                <InputText class="form-control" @bind-Value="address.State" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <button type="button" class="btn btn-success mb-3" @onclick="AddAddress">Adicionar Endereço</button>
+
+            <div>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+                <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancelar</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private Cliente Cliente = new Cliente
+        {
+            Addresses = new List<Address>()
+        };
+
+    private async Task FillAddress(Address address)
+    {
+        if (string.IsNullOrWhiteSpace(address.CEP))
+        {
+            Console.WriteLine("CEP não pode estar vazio.");
+            return;
+        }
+
+        try
+        {
+            var response = await Http.GetFromJsonAsync<ViaCepResponse>($"https://viacep.com.br/ws/{address.CEP}/json/");
+            if (response != null && string.IsNullOrEmpty(response.Erro))
+            {
+                address.Logradouro = response.Logradouro;
+                address.District = response.Bairro;
+                address.City = response.Localidade;
+                address.State = response.Uf;
+            }
+            else
+            {
+                Console.WriteLine("CEP inválido ou não encontrado.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao buscar CEP: {ex.Message}");
+        }
+    }
+
+    private void AddAddress()
+    {
+        Cliente.Addresses.Add(new Address { AddressType = AddressType.Delivery });
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/Client/List");
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var clienteToSend = new Cliente
+                {
+                    Id = Cliente.Id,
+                    Name = Cliente.Name,
+                    Email = Cliente.Email,
+                    Cpf = Cliente.Cpf,
+                    Phone = Cliente.Phone,
+                    Addresses = Cliente.Addresses.Select(addr => new Address
+                    {
+                        Id = addr.Id,
+                        AddressType = addr.AddressType,
+                        Logradouro = addr.Logradouro,
+                        NumberAddres = addr.NumberAddres,
+                        Complement = addr.Complement,
+                        District = addr.District,
+                        City = addr.City,
+                        State = addr.State,
+                        CEP = addr.CEP,
+                        ClientId = Cliente.Id
+                    }).ToList()
+                };
+
+            await _ClienteService.AddClienteAsync(clienteToSend);
+            Navigation.NavigateTo("/Client/List");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao salvar cliente: {ex.Message}");
+        }
+    }
+
+    private class ViaCepResponse
+    {
+        public string Logradouro { get; set; }
+        public string Bairro { get; set; }
+        public string Localidade { get; set; }
+        public string Uf { get; set; }
+        public string Erro { get; set; }
+    }
+}

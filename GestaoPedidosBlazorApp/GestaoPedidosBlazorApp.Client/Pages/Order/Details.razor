@@ -1,0 +1,73 @@
+﻿@page "/Order/Details/{OrderId:int}"
+@using GestaoPedidosBlazorApp.Client.Models
+@using GestaoPedidosBlazorApp.Client.Services
+@using System.Globalization;
+
+
+@inject OrderService _OrderService
+
+<h3>Detalhes do pedido #@OrderId</h3>
+
+@if (orderDetails != null)
+{
+    <div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Preço Unitário</th>
+                    <th>Quantidade</th>
+                    <th>Preço Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in orderDetails)
+                {
+                    <tr>
+                        <td>@item.ProductName</td>
+                        <td>@FormatToBRL(@item.UnitPrice)</td>
+                        <td>@item.Quantity</td>
+                        <td>@FormatToBRL(@item.TotalPrice)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else if (isLoading)
+{
+    <p>Carregando detalhes do pedido...</p>
+}
+else
+{
+    <p>Erro ao carregar os detalhes do pedido. Por favor, tente novamente.</p>
+}
+
+@code {
+    [Parameter]
+    public int OrderId { get; set; }
+
+    private List<OrderDetails>? orderDetails;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            orderDetails = await _OrderService.GetOrderDetailsAsync(OrderId);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erro ao carregar os detalhes do pedido: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public static string FormatToBRL(double value)
+    {
+        return value.ToString("C", new CultureInfo("pt-BR"));
+    }
+}

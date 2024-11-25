@@ -1,0 +1,78 @@
+﻿@page "/Product/List"
+@using GestaoPedidosBlazorApp.Client.Models
+@using GestaoPedidosBlazorApp.Client.Components
+@using GestaoPedidosBlazorApp.Client.Services
+@using System.Globalization;
+
+@inject NavigationManager Navigation
+@inject ProductService _ProductService
+@inject IJSRuntime JS
+
+
+<GenericTable T="Product"
+              Title="Produtos"
+              AddButtonText="Add Produto"
+              AddAction="@AddProduct"
+              Data="@Products"
+              Columns="@ProductColumns"
+              Actions="@Actions" />
+
+
+@code {
+    private List<Product> Products = new List<Product>();
+    private List<TableAction> Actions;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    protected override void OnInitialized()
+    {
+        Actions = new List<TableAction>
+        {
+            new TableAction { Label = "Delete", Icon = "ri-delete-bin-fill", Action = item => DeleteProduct((Product)item) }
+        };
+    }
+
+    private async Task LoadProducts()
+    {
+        Products = await _ProductService.GetProductsAsync();
+        Console.WriteLine(Products);
+    }
+
+    // Configuração das colunas para a tabela
+    private List<ColumnDefinition<Product>> ProductColumns = new List<ColumnDefinition<Product>>
+{
+    new ColumnDefinition<Product> { Header = "ID", PropertySelector = item => item.Id },
+    new ColumnDefinition<Product> { Header = "Nome", PropertySelector = item => item.Name },
+    new ColumnDefinition<Product> { Header = "Descrição", PropertySelector = item => item.Description },
+    new ColumnDefinition<Product> { Header = "SKU", PropertySelector = item => item.Sku },
+    new ColumnDefinition<Product> { Header = "Preço", PropertySelector = item => FormatToBRL(item.Price) }
+};
+
+    public Index()
+    {
+        Products = new List<Product>();
+    }
+
+    private void AddProduct() => Navigation.NavigateTo("/Product/Create");
+    private void ViewProduct(Product product)
+    {
+        Console.WriteLine($"Viewing product: {product.Name}");
+    }
+
+    private void EditProduct()
+    {
+        Console.WriteLine("Editing Product");
+    }
+
+    public static string FormatToBRL(double value)
+    {
+        return value.ToString("C", new CultureInfo("pt-BR"));
+    }
+
+    private void DeleteProduct(Product product) => Console.WriteLine($"Deleting Product: {product.Name}");
+}
+
